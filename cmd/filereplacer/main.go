@@ -30,7 +30,7 @@ type result struct {
 	// hit on result
 	found bool
 
-	idx *idx
+	idx idx
 	// abspath of the hit
 	abspath string
 
@@ -43,6 +43,10 @@ type result struct {
 
 	// expired will be true after r.replace is called and returned nil error
 	expired bool
+}
+
+func newResult(idx idx) *result {
+	return &result{idx: idx}
 }
 
 func (r result) replace(with string, newname string) error {
@@ -103,6 +107,10 @@ func searchFiles(rootdir string, targets *fileidx) (*fileidx, error) {
 			// go spawnWorker(s, target)
 			wg.Add(1)
 			go func() {
+				if err := os.Chdir(filepath.Join(rootdir, s.Name())); err != nil {
+					errchan <- err
+					return
+				}
 				_, err := searchFiles(filepath.Join(rootdir, s.Name()), targets)
 				if err != nil {
 					log.Println(err)
@@ -120,6 +128,19 @@ func searchFiles(rootdir string, targets *fileidx) (*fileidx, error) {
 	return targets, nil
 }
 
+func contains(s []string, target string) bool {
+	for _, m := range s {
+		if m == target {
+			return true
+		}
+	}
+	return false
+}
 func main() {
 	flags()
+	ix, err := searchFiles(srcroot, newFileIdx(10))
+	if err != nil {
+		panic(err)
+	}
+
 }

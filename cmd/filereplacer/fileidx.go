@@ -58,6 +58,15 @@ func (f *fileidx) Set() chan idx {
 	return c
 }
 
+func (f *fileidx) Get(key string) (*result, bool) {
+	id, found := f.f[key]
+	if !found {
+		return nil, false
+	}
+	return newResult(id), true
+
+}
+
 // shouldnt need this, since the changes are done sequentially.
 /*
 func (f fileidx) Get(key string) (chan result, context.Context) {
