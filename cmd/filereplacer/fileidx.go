@@ -13,6 +13,10 @@ type idx struct {
 	newPath string
 }
 
+func newIdx(filename, path string) idx {
+	return idx{filename: filename, origPath: path}
+}
+
 // fileidx is a map of filenames to idx
 type fileidx struct {
 	f map[string]idx

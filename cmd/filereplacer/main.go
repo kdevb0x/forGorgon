@@ -90,7 +90,7 @@ func spawnWorker(root string, targets *fileidx, resultChan chan result) {
 
 }
 
-func searchFiles(rootdir string, targets *fileidx, wlkfunc filepath.WalkFunc) (*fileidx, error) {
+func searchFiles(rootdir string, targets *fileidx) (*fileidx, error) {
 	subs, err := ioutil.ReadDir(rootdir)
 	if err != nil {
 		return nil, err
@@ -103,16 +103,21 @@ func searchFiles(rootdir string, targets *fileidx, wlkfunc filepath.WalkFunc) (*
 			// go spawnWorker(s, target)
 			wg.Add(1)
 			go func() {
-				_, err := searchFiles(s, targets)
+				_, err := searchFiles(filepath.Join(rootdir, s.Name()), targets)
 				if err != nil {
 					log.Println(err)
 					errchan <- err
 				}
+				wg.Done()
+
 			}()
 		}
+		c := targets.Set()
+		c <- newIdx(s.Name(), filepath.Join(rootdir, s.Name()))
+		close(c)
 	}
 	wg.Wait()
-
+	return targets, nil
 }
 
 func main() {
