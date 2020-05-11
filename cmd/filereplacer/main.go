@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io/ioutil"
 	"os"
+	"sync"
 
 	"github.com/spf13/pflag"
 )
@@ -79,58 +80,23 @@ func spawnWorker(root string, targets []string, resultChan chan result) {
 
 }
 
-type idx struct {
-	// filename
-	k string
-
-	// orig path
-	o string
-
-	// new path
-
-	n string
-}
-
-type fileidx struct {
-	f map[string][]string
-
-	pool []bakWorker
-
-	setq chan idx
-}
-
-func newFileIdx(size int) *fileidx {
-	var i = &fileidx{f: make(map[string][]string), pool: make([]bakWorker, size), setq: make(chan idx, size)}
-	go func() {
-		for r := range i.setq {
-			i.f[r.k] = []string{r.o, r.n}
-		}
-	}()
-	return i
-}
-
-// Set concurrently sets a key in f, overwriting if it already exists.
-// Set returns a channel that the value to set should be sent down.
-func (f fileidx) Set() chan idx {
-	var c = make(chan idx, 1)
-	go func() {
-		for range c {
-			f.setq <- <-c
-		}
-	}()
-	return c
-}
-
-func searchFiles(rootdir string, targets fileidx) (*fileidx, error) {
+func searchFiles(rootdir string, targets *fileidx) (*fileidx, error) {
 	subs, err := ioutil.ReadDir(rootdir)
 	if err != nil {
 		return nil, err
 	}
+	var wg sync.WaitGroup
+
 	for _, s := range subs {
 		if s.IsDir() {
 			// go spawnWorker(s, target)
+			wg.Add(1)
+			go func() {
+
+			}()
 		}
 	}
+	wg.Wait()
 
 }
 
