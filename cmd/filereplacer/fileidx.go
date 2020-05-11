@@ -1,7 +1,6 @@
 package main
 
-import "context"
-
+// idx is a record of a file.
 type idx struct {
 	// filename
 	filename string
@@ -14,17 +13,19 @@ type idx struct {
 	newPath string
 }
 
+// fileidx is a map of filenames to idx
 type fileidx struct {
 	f map[string]idx
 
 	pool []bakWorker
 
 	// the workqueue for concurrent map writes
+	// only need a set queue, reads can be done without locking.
 	setq chan idx
 }
 
-func newFileIdx(size int) *fileidx {
-	var i = &fileidx{f: make(map[string]idx), pool: make([]bakWorker, size), setq: make(chan idx, size)}
+func newFileIdx(queueSize int) *fileidx {
+	var i = &fileidx{f: make(map[string]idx), pool: make([]bakWorker, 5, 10), setq: make(chan idx, queueSize)}
 	go func() {
 		// the set loop
 		go func() {
@@ -53,6 +54,12 @@ func (f *fileidx) Set() chan idx {
 	return c
 }
 
-func (f fileidx) Get(key string) (chan idx, context.Context) {
+// shouldnt need this, since the changes are done sequentially.
+/*
+func (f fileidx) Get(key string) (chan result, context.Context) {
+	if i, found := f.f[key]; found {
+
+	}
 
 }
+*/

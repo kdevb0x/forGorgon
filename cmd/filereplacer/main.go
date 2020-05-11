@@ -3,26 +3,34 @@ package main
 import (
 	"errors"
 	"io/ioutil"
+	"log"
 	"os"
+	"path/filepath"
 	"sync"
 
 	"github.com/spf13/pflag"
 )
 
 var (
-	srcroot  string
-	destroot string
+	overwrite bool
+	srcroot   string
+	destroot  string
+	args      []string
 )
 
 func flags() {
 	srcroot = *pflag.StringP("root", "r", "/", "root dir containing files to change")
 	destroot = *pflag.StringP("dest", "d", "$PWD", "destination to root created files")
+	overwrite = *pflag.BoolP("overwrite", "f", false, "force overwriting old file without backing up (saves backup as origname.bak by default)")
+	pflag.Parse()
+	args = pflag.Args()
 }
 
 type result struct {
 	// hit on result
 	found bool
 
+	idx *idx
 	// abspath of the hit
 	abspath string
 
@@ -50,21 +58,23 @@ func (r result) replace(with string, newname string) error {
 		r.newSize = int64(len(f))
 
 	}
+	// save a copy of the original
 	err = os.Rename(r.abspath, r.abspath+".bak")
 	if err != nil {
 		return err
 	}
 
-	/* n, err := os.Create(r.abspath)
-	if err != nil {
-		return err
-	}
-	*/
-
+	// write the new file in the old ones place
 	if err := ioutil.WriteFile(r.abspath+"/"+newname, f, os.ModePerm); err != nil {
 		return err
 	}
+
 	r.expired = true
+
+	if overwrite {
+		// remove the backup
+		return os.Remove(r.abspath + ".bak")
+	}
 	return nil
 
 }
@@ -76,23 +86,28 @@ type bakWorker struct {
 	resultQ chan result
 }
 
-func spawnWorker(root string, targets []string, resultChan chan result) {
+func spawnWorker(root string, targets *fileidx, resultChan chan result) {
 
 }
 
-func searchFiles(rootdir string, targets *fileidx) (*fileidx, error) {
+func searchFiles(rootdir string, targets *fileidx, wlkfunc filepath.WalkFunc) (*fileidx, error) {
 	subs, err := ioutil.ReadDir(rootdir)
 	if err != nil {
 		return nil, err
 	}
 	var wg sync.WaitGroup
+	var errchan = make(chan error)
 
 	for _, s := range subs {
 		if s.IsDir() {
 			// go spawnWorker(s, target)
 			wg.Add(1)
 			go func() {
-
+				_, err := searchFiles(s, targets)
+				if err != nil {
+					log.Println(err)
+					errchan <- err
+				}
 			}()
 		}
 	}
