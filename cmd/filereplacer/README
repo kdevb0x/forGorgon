@@ -1,7 +1,11 @@
 simple program to search for a files absolute path given its name and root path
 to search recursively, and replace the file with another file.
 
-compile and install:
+Runnable binaries for GOARCH="amd64" GOOS="windows" are tagged:
+"@v0.0.x_release_win"
+
+
+to compile and install:
 
 If you have a go toolchain installed you can just run
 
@@ -14,5 +18,4 @@ then
 
 Otherwise:
 
-Runnable binaries for GOARCH="amd64" GOOS="windows" are tagged:
-"@v0.0.x_release_win"
+ Use one of the provided binaries in the releases branch.
