@@ -2,6 +2,8 @@ package main
 
 import (
 	"errors"
+	"fmt"
+	"io"
 	"io/ioutil"
 	"log"
 	"os"
@@ -94,6 +96,23 @@ func spawnWorker(root string, targets *fileidx, resultChan chan result) {
 
 }
 
+func matchTargets(targets fileidx) filepath.WalkFunc {
+	return func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			if res, found := targets.Get(info.Name()); found {
+				// err := res.replace(res.matched, info.Name())
+				err := simpleReplace(filepath.Join(path, info.Name()), res.abspath, !overwrite)
+				if err != nil {
+					return err
+				}
+			}
+		}
+		return nil
+	}
+}
 func searchFiles(rootdir string, targets *fileidx) (*fileidx, error) {
 	subs, err := ioutil.ReadDir(rootdir)
 	if err != nil {
@@ -136,11 +155,58 @@ func contains(s []string, target string) bool {
 	}
 	return false
 }
+
+// simpleReplace replaces the file 'target', with the file 'with'.
+// Both target and with should be absolute paths.
+func simpleReplace(target string, with string, saveBackup bool) error {
+	if saveBackup {
+		err := os.Rename(target, target+".bak")
+		if err != nil {
+			return err
+		}
+	}
+	c, err := os.Open(with)
+	if err != nil {
+		return err
+	}
+	defer c.Close()
+	cinfo, err := c.Stat()
+	if err != nil {
+		return err
+	}
+	csize := cinfo.Size()
+
+	f, err := os.Create(target)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	err = f.Truncate(csize)
+	if err != nil {
+		return err
+	}
+
+	_, err = f.Seek(0, 0)
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(f, c)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func main() {
 	flags()
 	ix, err := searchFiles(srcroot, newFileIdx(10))
 	if err != nil {
 		panic(err)
 	}
-
+	for k, v := range ix.f {
+		fmt.Println(k)
+		fmt.Println(v)
+	}
 }
