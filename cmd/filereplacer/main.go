@@ -16,16 +16,19 @@ var (
 
 func parseArgs() {
 	usage := `filereplacer usage:
-			filereplacer [target directory] [replacements root]
 
-			where [target directory] is the root directory to search recursively for files
-			matching filenames found by recursively searching [replacement root]
+filereplacer [target directory] [replacements root]
 
-			Example:
+  Where [target directory] is the root directory to search recursively for files
+matching filenames found by recursively searching [replacement root].
 
-				filereplacer /tmp ~/tmp
-			Would recursively search for filenames in ~/tmp, and if they match any
-			named files found by searching /tmp recursively, they are replaced by them.`
+Example:
+
+	filereplacer /tmp ~/tmp
+
+  Would recursively search for filenames in ~/tmp, and if they match any
+named files found by searching /tmp recursively, they are replaced by them.
+`
 
 	// check for help flags
 	switch os.Args[1] {
@@ -133,8 +136,7 @@ func replace(f string, with string) error {
 	return nil
 }
 
-func run() {
-	parseArgs()
+func run() error {
 
 	fmt.Println("searching for filenames of replacements...")
 	r, err := walkDirForFiles(replacementRoot)
@@ -153,17 +155,23 @@ func run() {
 	for i := 0; i < len(t); i++ {
 		for j := len(r) - 1; j >= 0; j-- {
 			if t[i].name == r[j].name {
-				err = replace(filepath.Join(t[i].path, t[i].name), filepath.Join(r[j].path, r[j].name))
+				err = replace(t[i].path, r[j].path)
 				if err != nil {
-					panic(err)
+					return err
 				}
 			}
 		}
 	}
 
 	fmt.Println("done")
+	return nil
 }
 
 func main() {
-	run()
+
+	parseArgs()
+	if err := run(); err != nil {
+		panic(err)
+	}
+	os.Exit(0)
 }
