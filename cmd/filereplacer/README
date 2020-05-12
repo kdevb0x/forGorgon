@@ -1,6 +1,12 @@
 simple program to search for a files absolute path given its name and root path
 to search recursively, and replace the file with another file.
 
+
+Crosscompiled binary for amd64 windows can be found in the
+v0.0.1_release-windows tag in releases branch.
+
+
+
 compile and install:
 
 If you have a go toolchain installed you can just run
