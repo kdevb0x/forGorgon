@@ -133,7 +133,7 @@ func replace(f string, with string) error {
 	return nil
 }
 
-func main() {
+func run() {
 	parseArgs()
 
 	fmt.Println("searching for filenames of replacements...")
@@ -162,4 +162,8 @@ func main() {
 	}
 
 	fmt.Println("done")
+}
+
+func main() {
+	run()
 }
